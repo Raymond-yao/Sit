@@ -1,15 +1,15 @@
-import java.io.{File, FileInputStream, PrintWriter}
+import java.io.{File, FileInputStream, FileWriter, PrintWriter}
 
 import Model.{Commit, Diff}
 import java.nio.file.{Files, Path, Paths}
+import java.text.SimpleDateFormat
 import java.util.UUID.randomUUID
-import java.util.{Optional, Properties, stream}
+import java.util.{Calendar, Optional, Properties, UUID, stream}
 
 import scala.util.Try
 
 class Sit(private val projectPath: String,
-          private val sitConfigPath: String
-         ) {
+          private val sitConfigPath: String) {
 
   private val (
     head: Option[Commit],
@@ -22,6 +22,14 @@ class Sit(private val projectPath: String,
    */
   private def persisToDisk: Unit = {
     // TODO
+    val fw = new FileWriter(sitConfigPath, true)
+    val uuid: UUID = randomUUID()
+    val form = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    val now = form.format(Calendar.getInstance().getTime)
+
+    val commitInfo: String = s"[$now] ${uuid.toString}\n"
+    fw.write(commitInfo)
+    fw.close()
   }
 
   /**
@@ -31,19 +39,7 @@ class Sit(private val projectPath: String,
    */
   private def readFromDisk: (Option[Commit], Option[Commit], Properties) = {
     // TODO
-    val stub = Commit(
-      randomUUID().toString,
-      None,
-      Diff(Map("a" -> "b", "c" -> "d"), Map()),
-      "initial commit",
-      0)
-
-    val theHead = stub.addNext(
-      Diff(Map("a" -> "kk", "something" -> "new", "cpp" -> "def"), Map("a" -> "b")),
-      "make some modification"
-    )
-
-    (Some(theHead), Some(stub), new Properties())
+    (None, None, new Properties())
   }
 
   /**
@@ -113,9 +109,10 @@ object Sit {
   }
 
   def main(args: Array[String]): Unit = {
-    val sit = Sit.init("C:/Users/62442/Documents/University/materials/CPSC 311/project/playground")
+    val sit = Sit.init("/Users/ziyangjin/JiayiLi/OneDrive/YEAR5TERM1/CPSC311/project/dest")
     // try put breakpoints in diff and run debugger to see the effect
     sit.diff()
+    sit.persisToDisk
   }
 }
 
