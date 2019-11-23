@@ -132,7 +132,7 @@ object Sit {
   }
 
   def main(args: Array[String]): Unit = {
-    val sit = Sit.init("/Users/zoez/dev/Sit/testProj")
+    val sit = Sit.init("C:/Users/62442/Documents/University/materials/CPSC 311/project/playground")
     // try put breakpoints in diff and run debugger to see the effect
     sit.diff()
     sit.history()
