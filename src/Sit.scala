@@ -6,6 +6,7 @@ import java.util.UUID.randomUUID
 import java.util.{Optional, Properties, stream}
 
 import scala.util.Try
+import scala.collection.immutable.List
 
 class Sit(private val projectPath: String,
           private val sitConfigPath: String
@@ -89,7 +90,25 @@ class Sit(private val projectPath: String,
    * print out the full commit list
    */
   def history(): Unit = {
-    // TODO
+    // TODO replace commits with real lists
+    val stub = Commit(
+      randomUUID().toString,
+      None,
+      Diff(Map("a" -> "b", "c" -> "d"), Map()),
+      "initial commit",
+      0)
+    val commits: List[Commit] = List(stub);
+    commits.foreach(commit => {
+      println(s"Commit Id: ${commit.id} ")
+      println(s"Message: ${commit.commitMessage} ")
+      println(s"TimeStamp: ${commit.timestamp}")
+      commit.diff.added.foreach(pair => {
+        println((s"+ ${pair._1} = ${pair._2}"))
+      })
+      commit.diff.deleted.foreach(pair => {
+        println((s"- ${pair._1} = ${pair._2}"))
+      })
+    })
   }
 
 }
@@ -113,9 +132,10 @@ object Sit {
   }
 
   def main(args: Array[String]): Unit = {
-    val sit = Sit.init("C:/Users/62442/Documents/University/materials/CPSC 311/project/playground")
+    val sit = Sit.init("/Users/zoez/dev/Sit/testProj")
     // try put breakpoints in diff and run debugger to see the effect
     sit.diff()
+    sit.history()
   }
 }
 
