@@ -97,18 +97,18 @@ class Sit(private val projectPath: String,
       Diff(Map("a" -> "b", "c" -> "d"), Map()),
       "initial commit",
       0)
-    val commits: List[Commit] = List(stub);
-    commits.foreach(commit => {
-      println(s"Commit Id: ${commit.id} ")
-      println(s"Message: ${commit.commitMessage} ")
-      println(s"TimeStamp: ${commit.timestamp}")
-      commit.diff.added.foreach(pair => {
-        println((s"+ ${pair._1} = ${pair._2}"))
-      })
-      commit.diff.deleted.foreach(pair => {
-        println((s"- ${pair._1} = ${pair._2}"))
-      })
+    println(s"Commit: ${stub.id} ")
+    println(s"    ${stub.commitMessage} ")
+    println(s"TimeStamp: ${stub.timestamp}")
+    stub.diff.added.foreach(pair => {
+      println((s"+ ${pair._1} = ${pair._2}"))
     })
+    stub.diff.deleted.foreach(pair => {
+      println((s"- ${pair._1} = ${pair._2}"))
+      })
+    if (stub.parent != None) {
+      // TODO print parent;
+    }
   }
 
 }
