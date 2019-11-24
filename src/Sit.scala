@@ -90,7 +90,7 @@ class Sit(private val projectPath: String,
    * print out the full commit list
    */
   def history(): Unit = {
-    // TODO replace commits with real lists
+    // TODO replace stub with real commit
     val stub = Commit(
       randomUUID().toString,
       None,
