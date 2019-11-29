@@ -7,6 +7,7 @@ import java.util.UUID.randomUUID
 import java.util.{Calendar, Optional, Properties, UUID, stream}
 
 import scala.util.Try
+import scala.collection.immutable.List
 
 class Sit(private val projectPath: String,
           private val sitConfigPath: String) {
@@ -84,10 +85,21 @@ class Sit(private val projectPath: String,
   /**
    * print out the full commit list
    */
-  def history(): Unit = {
-    // TODO
-  }
-
+  def history(head: Option[Commit]): Unit =
+    head match {
+      case Some(commit: Commit) => {
+        println(s"Commit: ${commit.id} ")
+        println(s"    ${commit.commitMessage} ")
+        println(s"TimeStamp: ${commit.timestamp}")
+        commit.diff.added.foreach(pair => {
+          println((s"+ ${pair._1} = ${pair._2}"))
+        })
+        commit.diff.deleted.foreach(pair => {
+          println((s"- ${pair._1} = ${pair._2}"))
+        })
+      }
+      case _ =>
+    }
 }
 
 object Sit {
