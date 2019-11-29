@@ -89,28 +89,21 @@ class Sit(private val projectPath: String,
   /**
    * print out the full commit list
    */
-  def history(): Unit = {
-    // TODO replace stub with real commit
-    val stub = Commit(
-      randomUUID().toString,
-      None,
-      Diff(Map("a" -> "b", "c" -> "d"), Map()),
-      "initial commit",
-      0)
-    println(s"Commit: ${stub.id} ")
-    println(s"    ${stub.commitMessage} ")
-    println(s"TimeStamp: ${stub.timestamp}")
-    stub.diff.added.foreach(pair => {
-      println((s"+ ${pair._1} = ${pair._2}"))
-    })
-    stub.diff.deleted.foreach(pair => {
-      println((s"- ${pair._1} = ${pair._2}"))
-      })
-    if (stub.parent != None) {
-      // TODO print parent;
+  def history(head: Option[Commit]): Unit =
+    head match {
+      case Some(commit: Commit) => {
+        println(s"Commit: ${commit.id} ")
+        println(s"    ${commit.commitMessage} ")
+        println(s"TimeStamp: ${commit.timestamp}")
+        commit.diff.added.foreach(pair => {
+          println((s"+ ${pair._1} = ${pair._2}"))
+        })
+        commit.diff.deleted.foreach(pair => {
+          println((s"- ${pair._1} = ${pair._2}"))
+        })
+      }
+      case _ =>
     }
-  }
-
 }
 
 object Sit {
@@ -135,7 +128,6 @@ object Sit {
     val sit = Sit.init("C:/Users/62442/Documents/University/materials/CPSC 311/project/playground")
     // try put breakpoints in diff and run debugger to see the effect
     sit.diff()
-    sit.history()
   }
 }
 
