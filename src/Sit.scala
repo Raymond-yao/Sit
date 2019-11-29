@@ -82,15 +82,33 @@ class Sit(private val projectPath: String,
     }
   }
 
-  def revert(): Unit = {
-    // TODO
+  def getDiff(commitId: String, acc: Diff, currHead: Option[Commit]): Diff =
+    currHead match {
+      case None => acc;
+      case Some(commit) => {
+        commit match {
+          case Commit(`commitId`, _, _, _,_) => acc // we have found the target we are reverting to
+          case _ => {
+            commit.diff.deleted.foldLeft(acc.added, (b: Map[String, String], a: (String, String))=> b + (a._1 -> a._2))
+            commit.diff.added.foldLeft(acc.deleted, (b: Map[String, String], a: (String, String))=> b + (a._1 -> a._2))
+            acc
+          }
+        }
+      }
+    }
+
+  def revert(commitId: String): Unit = {
+    var acc: Diff = Diff(Map(), Map())
+    getDiff(commitId, acc, head)
+    // TODO commit diff properly once commit is done
+    commit(s"revert to ${commitId}")
   }
 
   /**
    * print out the full commit list
    */
-  def history(head: Option[Commit]): Unit =
-    head match {
+  def history(currHead: Option[Commit]): Unit =
+    currHead match {
       case Some(commit: Commit) => {
         println(s"Commit: ${commit.id} ")
         println(s"    ${commit.commitMessage} ")
