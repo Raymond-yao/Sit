@@ -26,11 +26,9 @@ class Sit(private val projectPath: String,
   private def persisToDisk(head: Commit): Unit = {
     // TODO haven't finished yet...
     val fw = new FileWriter(sitConfigPath, true)
-    val uuid: UUID = randomUUID()
-    val form = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    val now = form.format(Calendar.getInstance().getTime)
 
-    val commitInfo: String = s"[${head.timestamp}] ${head.id} ${head.commitMessage} \n\tAdded: ${head.diff.added}\n\tDeleted: ${head.diff.deleted}\n"
+    val commitInfo: String = s"commit ${head.id} \n\tMessage: ${head.commitMessage} \n\tTimestamp: ${head.timestamp} \n\tAdded: ${head.diff.added}\n\tDeleted: ${head.diff.deleted}\n"
+
     fw.write(commitInfo)
     fw.close()
   }
