@@ -12,6 +12,8 @@ import scala.collection.immutable.List
 class Sit(private val projectPath: String,
           private val sitConfigPath: String) {
 
+  private val emptyDiff = Diff(Map.empty, Map.empty)
+
   private val (
     head: Option[Commit],
     tail: Option[Commit],
@@ -22,13 +24,13 @@ class Sit(private val projectPath: String,
    * persist the current Model.Commit list to the directory, ideally it should be located in ./.sit
    */
   private def persisToDisk(head: Commit): Unit = {
-    // TODO haven't finish yet...
+    // TODO haven't finished yet...
     val fw = new FileWriter(sitConfigPath, true)
     val uuid: UUID = randomUUID()
     val form = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     val now = form.format(Calendar.getInstance().getTime)
 
-    val commitInfo: String = s"[$now] ${uuid.toString} \n"
+    val commitInfo: String = s"[${head.timestamp}] ${head.id} ${head.commitMessage} \n\tAdded: ${head.diff.added}\n\tDeleted: ${head.diff.deleted}\n"
     fw.write(commitInfo)
     fw.close()
   }
@@ -66,12 +68,12 @@ class Sit(private val projectPath: String,
     // TODO
     val currCommit = head match {
       case Some(commit) => commit.addNext(
-        diff().getOrElse(None),
+        diff().getOrElse(emptyDiff),
         commitMessage)
       case None => Commit(
         randomUUID().toString,
         None,
-        diff().getOrElse(None),
+        diff().getOrElse(emptyDiff),
         commitMessage,
         0)
     }
@@ -148,6 +150,7 @@ object Sit {
     val sit = Sit.init("/Users/ziyangjin/JiayiLi/OneDrive/YEAR5TERM1/CPSC311/project/dest")
     // try put breakpoints in diff and run debugger to see the effect
     sit.diff()
+    sit.commit("A new commit")
 //    sit.persisToDisk
   }
 }
