@@ -21,14 +21,14 @@ class Sit(private val projectPath: String,
   /**
    * persist the current Model.Commit list to the directory, ideally it should be located in ./.sit
    */
-  private def persisToDisk: Unit = {
-    // TODO
+  private def persisToDisk(head: Commit): Unit = {
+    // TODO haven't finish yet...
     val fw = new FileWriter(sitConfigPath, true)
     val uuid: UUID = randomUUID()
     val form = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     val now = form.format(Calendar.getInstance().getTime)
 
-    val commitInfo: String = s"[$now] ${uuid.toString}\n"
+    val commitInfo: String = s"[$now] ${uuid.toString} \n"
     fw.write(commitInfo)
     fw.close()
   }
@@ -40,7 +40,19 @@ class Sit(private val projectPath: String,
    */
   private def readFromDisk: (Option[Commit], Option[Commit], Properties) = {
     // TODO
-    (None, None, new Properties())
+    // hard coded:
+    val stub = Commit(
+      randomUUID().toString,
+      None,
+      Diff(added = Map("a" -> "b", "c" -> "d"), deleted = Map()),
+      "initial commit",
+      0)
+
+    val theHead = stub.addNext(
+      Diff(added = Map("a" -> "kk", "something" -> "new", "cpp" -> "def"), deleted = Map("a" -> "b")),
+      "make some modification"
+    )
+    (Some(theHead), Some(stub), new Properties())
   }
 
   /**
@@ -52,6 +64,18 @@ class Sit(private val projectPath: String,
    */
   def commit(commitMessage: String): Unit = {
     // TODO
+    val currCommit = head match {
+      case Some(commit) => commit.addNext(
+        diff().getOrElse(None),
+        commitMessage)
+      case None => Commit(
+        randomUUID().toString,
+        None,
+        diff().getOrElse(None),
+        commitMessage,
+        0)
+    }
+    persisToDisk(currCommit)
   }
 
   /**
@@ -124,7 +148,7 @@ object Sit {
     val sit = Sit.init("/Users/ziyangjin/JiayiLi/OneDrive/YEAR5TERM1/CPSC311/project/dest")
     // try put breakpoints in diff and run debugger to see the effect
     sit.diff()
-    sit.persisToDisk
+//    sit.persisToDisk
   }
 }
 
