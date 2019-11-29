@@ -63,7 +63,6 @@ class Sit(private val projectPath: String,
    * @return the commit list stored in .sit file
    */
   def commit(commitMessage: String): Unit = {
-    // TODO
     val currCommit = head match {
       case Some(commit) => commit.addNext(
         diff().getOrElse(emptyDiff),
