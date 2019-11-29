@@ -2,12 +2,10 @@ import java.io.{File, FileInputStream, FileWriter, PrintWriter}
 
 import Model.{Commit, Diff}
 import java.nio.file.{Files, Path, Paths}
-import java.text.SimpleDateFormat
 import java.util.UUID.randomUUID
-import java.util.{Calendar, Optional, Properties, UUID, stream}
+import java.util.{Optional, Properties, stream}
 
 import scala.util.Try
-import scala.collection.immutable.List
 
 class Sit(private val projectPath: String,
           private val sitConfigPath: String) {
@@ -18,18 +16,23 @@ class Sit(private val projectPath: String,
     head: Option[Commit],
     tail: Option[Commit],
     baseProject: Properties) = Try(readFromDisk).getOrElse((None, None, new Properties()))
-  private val newestProject = head.map(Util.rebuild(baseProject, _)).getOrElse(baseProject)
+  private var newestProject = head.map(Util.rebuild(baseProject, _)).getOrElse(baseProject)
+
+  private def fwHelper(base: Properties, head: Commit)(implicit fw: FileWriter): Properties = {
+    val commitInfo: String = s"commit ${head.id} \n\tMessage: ${head.commitMessage} \n\tTimestamp: ${head.timestamp} \n\tAdded: ${head.diff.added}\n\tDeleted: ${head.diff.deleted}\n"
+
+    fw.write(commitInfo)
+    base
+  }
 
   /**
    * persist the current Model.Commit list to the directory, ideally it should be located in ./.sit
    */
   private def persisToDisk(head: Commit): Unit = {
-    // TODO haven't finished yet...
-    val fw = new FileWriter(sitConfigPath, true)
+    implicit val fw = new FileWriter(sitConfigPath)
 
-    val commitInfo: String = s"commit ${head.id} \n\tMessage: ${head.commitMessage} \n\tTimestamp: ${head.timestamp} \n\tAdded: ${head.diff.added}\n\tDeleted: ${head.diff.deleted}\n"
+    head.foldLeft(fwHelper, newestProject)
 
-    fw.write(commitInfo)
     fw.close()
   }
 
@@ -105,24 +108,25 @@ class Sit(private val projectPath: String,
     // TODO
   }
 
+  private def histHelper(base: Properties, commit: Commit): Properties = {
+    println(s"Commit: ${commit.id} ")
+    println(s"    ${commit.commitMessage} ")
+    println(s"TimeStamp: ${commit.timestamp}")
+    commit.diff.added.foreach(pair => {
+      println((s"+ ${pair._1} = ${pair._2}"))
+    })
+    commit.diff.deleted.foreach(pair => {
+      println((s"- ${pair._1} = ${pair._2}"))
+    })
+    base
+  }
+
   /**
    * print out the full commit list
    */
-  def history(head: Option[Commit]): Unit =
-    head match {
-      case Some(commit: Commit) => {
-        println(s"Commit: ${commit.id} ")
-        println(s"    ${commit.commitMessage} ")
-        println(s"TimeStamp: ${commit.timestamp}")
-        commit.diff.added.foreach(pair => {
-          println((s"+ ${pair._1} = ${pair._2}"))
-        })
-        commit.diff.deleted.foreach(pair => {
-          println((s"- ${pair._1} = ${pair._2}"))
-        })
-      }
-      case _ =>
-    }
+  def history(): Unit =
+    head.map(h => h.foldLeft(histHelper, newestProject)).getOrElse(println("HEAD is null!"))
+
 }
 
 object Sit {
@@ -146,9 +150,9 @@ object Sit {
   def main(args: Array[String]): Unit = {
     val sit = Sit.init("/Users/ziyangjin/JiayiLi/OneDrive/YEAR5TERM1/CPSC311/project/dest")
     // try put breakpoints in diff and run debugger to see the effect
-    sit.diff()
-    sit.commit("A new commit")
-//    sit.persisToDisk
+    // sit.diff()
+    sit.commit("a new commit")
+//    sit.history()
   }
 }
 
