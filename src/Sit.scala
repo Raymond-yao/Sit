@@ -16,7 +16,7 @@ class Sit(private val projectPath: String,
     head: Option[Commit],
     tail: Option[Commit],
     baseProject: Properties) = Try(readFromDisk).getOrElse((None, None, new Properties()))
-  private var newestProject = head.map(Util.rebuild(baseProject, _)).getOrElse(baseProject)
+  private val newestProject = head.map(Util.rebuild(baseProject, _)).getOrElse(baseProject)
 
   private def fwHelper(base: Properties, head: Commit)(implicit fw: FileWriter): Properties = {
     val commitInfo: String = s"commit ${head.id} \n\tMessage: ${head.commitMessage} \n\tTimestamp: ${head.timestamp} \n\tAdded: ${head.diff.added}\n\tDeleted: ${head.diff.deleted}\n"
