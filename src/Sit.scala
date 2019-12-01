@@ -104,8 +104,26 @@ class Sit(private val projectPath: String,
     }
   }
 
-  def revert(): Unit = {
-    // TODO
+  def getDiff(commitId: String, acc: Diff, currHead: Option[Commit]): Diff =
+    currHead match {
+      case None => acc;
+      case Some(commit) => {
+        commit match {
+          case Commit(`commitId`, _, _, _,_) => acc // we have found the target we are reverting to
+          case _ => {
+            commit.diff.deleted.foldLeft(acc.added, (b: Map[String, String], a: (String, String))=> b + (a._1 -> a._2))
+            commit.diff.added.foldLeft(acc.deleted, (b: Map[String, String], a: (String, String))=> b + (a._1 -> a._2))
+            acc
+          }
+        }
+      }
+    }
+
+  def revert(commitId: String): Unit = {
+    var acc: Diff = Diff(Map(), Map())
+    getDiff(commitId, acc, head)
+    // TODO commit diff properly once commit is done
+    commit(s"revert to ${commitId}")
   }
 
   private def histHelper(base: Properties, commit: Commit): Properties = {
@@ -124,6 +142,7 @@ class Sit(private val projectPath: String,
   /**
    * print out the full commit list
    */
+
   def history(): Unit =
     head.map(h => h.foldLeft(histHelper, newestProject)).getOrElse(println("HEAD is null!"))
 
