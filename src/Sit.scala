@@ -1,4 +1,4 @@
-import java.io.{File, FileInputStream, PrintWriter}
+import java.io.{File, FileInputStream, FileWriter, PrintWriter}
 
 import Model.{Commit, Diff}
 import java.nio.file.{Files, Path, Paths}
@@ -6,11 +6,11 @@ import java.util.UUID.randomUUID
 import java.util.{Optional, Properties, stream}
 
 import scala.util.Try
-import scala.collection.immutable.List
 
 class Sit(private val projectPath: String,
-          private val sitConfigPath: String
-         ) {
+          private val sitConfigPath: String) {
+
+  private val emptyDiff = Diff(Map.empty, Map.empty)
 
   private val (
     head: Option[Commit],
@@ -18,11 +18,22 @@ class Sit(private val projectPath: String,
     baseProject: Properties) = Try(readFromDisk).getOrElse((None, None, new Properties()))
   private val newestProject = head.map(Util.rebuild(baseProject, _)).getOrElse(baseProject)
 
+  private def fwHelper(base: Properties, head: Commit)(implicit fw: FileWriter): Properties = {
+    val commitInfo: String = s"commit ${head.id} \n\tMessage: ${head.commitMessage} \n\tTimestamp: ${head.timestamp} \n\tAdded: ${head.diff.added}\n\tDeleted: ${head.diff.deleted}\n"
+
+    fw.write(commitInfo)
+    base
+  }
+
   /**
    * persist the current Model.Commit list to the directory, ideally it should be located in ./.sit
    */
-  private def persisToDisk: Unit = {
-    // TODO
+  private def persisToDisk(head: Commit): Unit = {
+    implicit val fw = new FileWriter(sitConfigPath)
+
+    head.foldLeft(fwHelper, newestProject)
+
+    fw.close()
   }
 
   /**
@@ -32,18 +43,18 @@ class Sit(private val projectPath: String,
    */
   private def readFromDisk: (Option[Commit], Option[Commit], Properties) = {
     // TODO
+    // hard coded:
     val stub = Commit(
       randomUUID().toString,
       None,
-      Diff(Map("a" -> "b", "c" -> "d"), Map()),
+      Diff(added = Map("a" -> "b", "c" -> "d"), deleted = Map()),
       "initial commit",
       0)
 
     val theHead = stub.addNext(
-      Diff(Map("a" -> "kk", "something" -> "new", "cpp" -> "def"), Map("a" -> "b")),
+      Diff(added = Map("a" -> "kk", "something" -> "new", "cpp" -> "def"), deleted = Map("a" -> "b")),
       "make some modification"
     )
-
     (Some(theHead), Some(stub), new Properties())
   }
 
@@ -55,7 +66,18 @@ class Sit(private val projectPath: String,
    * @return the commit list stored in .sit file
    */
   def commit(commitMessage: String): Unit = {
-    // TODO
+    val currCommit = head match {
+      case Some(commit) => commit.addNext(
+        diff().getOrElse(emptyDiff),
+        commitMessage)
+      case None => Commit(
+        randomUUID().toString,
+        None,
+        diff().getOrElse(emptyDiff),
+        commitMessage,
+        0)
+    }
+    persisToDisk(currCommit)
   }
 
   /**
@@ -104,24 +126,26 @@ class Sit(private val projectPath: String,
     commit(s"revert to ${commitId}")
   }
 
+  private def histHelper(base: Properties, commit: Commit): Properties = {
+    println(s"Commit: ${commit.id} ")
+    println(s"    ${commit.commitMessage} ")
+    println(s"TimeStamp: ${commit.timestamp}")
+    commit.diff.added.foreach(pair => {
+      println((s"+ ${pair._1} = ${pair._2}"))
+    })
+    commit.diff.deleted.foreach(pair => {
+      println((s"- ${pair._1} = ${pair._2}"))
+    })
+    base
+  }
+
   /**
    * print out the full commit list
    */
-  def history(currHead: Option[Commit]): Unit =
-    currHead match {
-      case Some(commit: Commit) => {
-        println(s"Commit: ${commit.id} ")
-        println(s"    ${commit.commitMessage} ")
-        println(s"TimeStamp: ${commit.timestamp}")
-        commit.diff.added.foreach(pair => {
-          println((s"+ ${pair._1} = ${pair._2}"))
-        })
-        commit.diff.deleted.foreach(pair => {
-          println((s"- ${pair._1} = ${pair._2}"))
-        })
-      }
-      case _ =>
-    }
+
+  def history(): Unit =
+    head.map(h => h.foldLeft(histHelper, newestProject)).getOrElse(println("HEAD is null!"))
+
 }
 
 object Sit {
@@ -143,9 +167,11 @@ object Sit {
   }
 
   def main(args: Array[String]): Unit = {
-    val sit = Sit.init("C:/Users/62442/Documents/University/materials/CPSC 311/project/playground")
+    val sit = Sit.init("/Users/ziyangjin/JiayiLi/OneDrive/YEAR5TERM1/CPSC311/project/dest")
     // try put breakpoints in diff and run debugger to see the effect
-    sit.diff()
+    // sit.diff()
+    sit.commit("a new commit")
+//    sit.history()
   }
 }
 
