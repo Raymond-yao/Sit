@@ -3,6 +3,9 @@ package Model
 import java.util.Properties
 import java.util.UUID.randomUUID
 
+import net.liftweb.json.JsonAST.{JObject,JField, JNull, JString}
+
+
 case class Commit(
                    id: String,
                    parent: Option[Commit],
@@ -32,5 +35,14 @@ case class Commit(
    * */
   def foldLeft(helper: (Properties, Commit) => Properties, base: Properties): Properties = {
     parent.map(c => helper(c.foldLeft(helper, base), this)).getOrElse(helper(base, this))
+  }
+
+  def toJson: JObject = {
+    JObject(List(
+      JField("id", JString(id)),
+      JField("diff", diff.toJson),
+      JField("message", JString(commitMessage)),
+      JField("parent_id", parent.map(p => JString(p.id)).getOrElse(JNull))
+    ))
   }
 }
