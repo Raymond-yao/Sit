@@ -1,9 +1,14 @@
 import java.util.Properties
-import scala.jdk.CollectionConverters._
 
+import scala.jdk.CollectionConverters._
 import Model.{Commit, Diff}
+import net.liftweb.json.JsonAST.{JField, JObject, JString, JValue}
 
 object Util {
+
+  def buildJsonList(c: Commit): List[JObject] = {
+    List(c.toJson) ++ c.parent.map(buildJsonList).getOrElse(List())
+  }
 
   /**
    * Given a base project and a list of commits, rebuild the current project
@@ -17,13 +22,36 @@ object Util {
     (someProp, someCommit) => {
       val propAfterChange = clone(someProp)
       val diffs = someCommit.diff
+      diffs.deleted.keySet.foreach(propAfterChange.remove(_))
       diffs.added.foreach {
         case (k, v) => propAfterChange.setProperty(k, v)
       }
 
-      diffs.deleted.keySet.foreach(propAfterChange.remove(_))
       propAfterChange
     }, baseProj)
+
+  def findFieldToVal[T](fields: List[JField], key: String): T = {
+    fields.find(_.name == key).get.value.asInstanceOf[T]
+  }
+
+  def rebuildCommit(fields: List[JField], parentCommit: Option[Commit]): Option[Commit] = {
+    val diffJson = findFieldToVal[JObject](fields, "diff")
+    val diff = Diff.fromJson(diffJson)
+    val id = findFieldToVal[JString](fields, "id").s
+    val commitMessage = findFieldToVal[JString](fields, "message").s
+    val timestamp = findFieldToVal[JString](fields, "timestamp").s.toLong
+
+    Some(Commit(id, parentCommit, diff, commitMessage, timestamp))
+  }
+
+  def rebuildCommitList(lst: List[JValue]): Option[Commit] = {
+    lst.foldRight[Option[Commit]](None) {
+      case (jVal, commitOpt) =>
+        jVal match {
+          case JObject(lst: List[JField]) => rebuildCommit(lst, commitOpt)
+        }
+    }
+  }
 
   /**
    * Return a deep copy of the given properties object, I do this to strict the immutability of the structure

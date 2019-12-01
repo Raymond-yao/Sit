@@ -2,11 +2,9 @@ import java.io.{File, FileInputStream, FileWriter, PrintWriter}
 
 import Model.{Commit, Diff}
 import java.nio.file.{Files, Path, Paths}
-import java.util.{Optional, Properties, stream}
-import java.util.UUID.randomUUID
+import java.util.{Optional, Properties, Scanner, stream}
 
 import net.liftweb.json._
-import net.liftweb.json.JsonAST.JObject
 
 import scala.util.Try
 
@@ -17,20 +15,15 @@ class Sit(private val projectPath: String,
 
   private val (
     head: Option[Commit],
-    tail: Option[Commit],
-    baseProject: Properties) = Try(readFromDisk).getOrElse((None, None, new Properties()))
+    baseProject: Properties) = Try(readFromDisk).getOrElse((None, new Properties()))
   private val newestProject = head.map(Util.rebuild(baseProject, _)).getOrElse(baseProject)
-
-  private def buildJsonList(c: Commit): List[JObject] = {
-    List(c.toJson) ++ c.parent.map(buildJsonList).getOrElse(List())
-  }
 
   /**
    * persist the current Model.Commit list to the directory, ideally it should be located in ./.sit
    */
   private def persisToDisk(commit: Commit): Unit = {
     val fw = new FileWriter(sitConfigPath)
-    fw.write(prettyRender(JArray(buildJsonList(commit))))
+    fw.write(prettyRender(JArray(Util.buildJsonList(commit))))
     fw.close()
 
   }
@@ -40,14 +33,17 @@ class Sit(private val projectPath: String,
    *
    * @return (head, tail, baseProject)
    */
-  private def readFromDisk: (Option[Commit], Option[Commit], Properties) = {
-    // TODO
-    val stub = Commit(randomUUID().toString, Some(
-      Commit(randomUUID().toString, Some(
-        Commit(randomUUID().toString, None, Diff(Map("a" -> "2", "b" -> "3"), Map()), "first commit", 100L)
-      ), Diff(Map("c" -> "4"), Map("a" -> "2")), "second commit", 120L)),
-      Diff(Map("d" -> "5"), Map("b" -> "3")), "third commit", 130L)
-    (Some(stub), None, new Properties())
+  private def readFromDisk: (Option[Commit], Properties) = {
+    val reader = new Scanner(new File((sitConfigPath)))
+    val sb: StringBuilder = new StringBuilder()
+    while (reader.hasNextLine) {
+      sb.append(reader.nextLine())
+    }
+    val json = sb.toString()
+    val commitList:List[JValue] = parse(json).asInstanceOf[JArray].arr
+    val headParsed = Util.rebuildCommitList(commitList)
+
+    (headParsed, new Properties())
   }
 
   /**
@@ -58,17 +54,12 @@ class Sit(private val projectPath: String,
    * @return the commit list stored in .sit file
    */
   def commit(commitMessage: String): Unit = {
-    val currCommit = head match {
-      case Some(commit) => commit.addNext(
-        diff().getOrElse(emptyDiff),
-        commitMessage)
-      case None => Commit(
-        randomUUID().toString,
-        None,
-        diff().getOrElse(emptyDiff),
-        commitMessage,
-        0)
-    }
+    val finalDiff = diff().getOrElse(emptyDiff)
+
+    val currCommit = head.map(
+      _.addNext(finalDiff, commitMessage)
+    ).getOrElse(Commit.head(finalDiff, commitMessage))
+
     persisToDisk(currCommit)
   }
 
@@ -158,8 +149,8 @@ object Sit {
   }
 
   def main(args: Array[String]): Unit = {
-    val sit = Sit.init("some/good/path")
-    sit.commit("fourth commit")
+    val sit = Sit.init("/some/good/path")
+    sit.commit("first commit");
   }
 }
 

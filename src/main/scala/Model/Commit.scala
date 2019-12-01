@@ -42,7 +42,15 @@ case class Commit(
       JField("id", JString(id)),
       JField("diff", diff.toJson),
       JField("message", JString(commitMessage)),
+      JField("timestamp", JString(timestamp.toString)),
       JField("parent_id", parent.map(p => JString(p.id)).getOrElse(JNull))
     ))
+  }
+}
+
+object Commit {
+
+  def head(diff: Diff, commitMessage: String): Commit = {
+    Commit(randomUUID().toString, None, diff, commitMessage, System.currentTimeMillis())
   }
 }
