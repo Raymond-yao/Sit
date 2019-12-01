@@ -40,7 +40,7 @@ class Sit(private val projectPath: String,
       sb.append(reader.nextLine())
     }
     val json = sb.toString()
-    val commitList:List[JValue] = parse(json).asInstanceOf[JArray].arr
+    val commitList: List[JValue] = parse(json).asInstanceOf[JArray].arr
     val headParsed = Util.rebuildCommitList(commitList)
 
     (headParsed, new Properties())
@@ -148,9 +148,44 @@ object Sit {
     new Sit(projectPath, sitPath)
   }
 
+  private def buildMsg(msg: Array[String]): String = {
+    val sb = new StringBuilder()
+    var i = 1
+    while (i < msg.length) {
+      sb.append(msg(i))
+      sb.append(" ")
+      i += 1
+    }
+
+    sb.toString()
+  }
+
   def main(args: Array[String]): Unit = {
-    val sit = Sit.init("/some/good/path")
-    sit.commit("first commit");
+    val projPath = args(0)
+    val scanner = new Scanner(System.in);
+    System.out.println("Sit Project\n");
+
+    while (true) {
+      System.out.print(">")
+      val command = scanner.nextLine()
+      val commands = command.split(" ")
+      commands(0) match {
+        case "init" =>
+          Sit.init(projPath)
+          System.exit(0)
+        case "commit" =>
+          val commitMsg = if (commands.length < 2) {
+            "empty message"
+          } else {
+            buildMsg(commands)
+          }
+          val sit = Sit.init(projPath)
+          sit.commit(commitMsg)
+          System.exit(0)
+        case _ =>
+          System.out.println("Unknown Command \n")
+      }
+    }
   }
 }
 
