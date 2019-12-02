@@ -7,6 +7,7 @@ import java.util.{Optional, Properties, Scanner, stream}
 import net.liftweb.json._
 
 import scala.util.Try
+import Console.{GREEN, RED, RESET}
 
 class Sit(private val projectPath: String,
           private val sitConfigPath: String) {
@@ -163,16 +164,16 @@ object Sit {
   def main(args: Array[String]): Unit = {
     val projPath = args(0)
     val scanner = new Scanner(System.in);
-    System.out.println("Sit Project\n");
+    System.out.println("Sit Project");
 
     while (true) {
       System.out.print(">")
+      Console.flush()
       val command = scanner.nextLine()
       val commands = command.split(" ")
       commands(0) match {
         case "init" =>
           Sit.init(projPath)
-          System.exit(0)
         case "commit" =>
           val commitMsg = if (commands.length < 2) {
             "empty message"
@@ -181,9 +182,27 @@ object Sit {
           }
           val sit = Sit.init(projPath)
           sit.commit(commitMsg)
-          System.exit(0)
+          System.out.println("\n Committed")
+        case "diff" =>
+          val sit = Sit.init(projPath)
+          System.out.println("\nShowing the current difference:")
+          sit.diff().foreach(d => {
+            System.out.println("Added:")
+            d.added.foreach {
+              case (k , v) =>
+                System.out.println(s"   ${RESET}${GREEN}${k} -> ${v}${RESET}")
+            }
+
+            System.out.println("Deleted:")
+            d.deleted.foreach {
+              case (k , v) =>
+                System.out.println(s"   ${RESET}${RED}${k} -> ${v}${RESET}")
+            }
+          })
+        case "exit" =>
+          return
         case _ =>
-          System.out.println("Unknown Command \n")
+          System.out.println("\nUnknown Command")
       }
     }
   }
